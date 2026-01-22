@@ -1,0 +1,306 @@
+// ========================================
+// WooCommerce Buy Now Button - COMPLETE VERSION WITH ALL FEATURES
+// ========================================
+
+// ✅ Add Buy Now button on product page
+function wpamit_add_buy_now_button_single() {
+    global $product;
+
+    if ( $product->is_type('external') ) return;
+
+    echo '<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.querySelector("form.cart");
+        if (!form) return;
+
+        const buyNowBtn = document.createElement("button");
+        buyNowBtn.type = "button";
+        buyNowBtn.className = "button alt buy_now_button";
+        buyNowBtn.textContent = "Buy Now";
+
+        form.parentNode.insertBefore(buyNowBtn, form.nextSibling);
+
+        buyNowBtn.addEventListener("click", function() {
+            const productId = ' . $product->get_ID() . ';
+            let quantity = form.querySelector("[name=quantity]") ? parseInt(form.querySelector("[name=quantity]").value) : 1;
+            let variationId = form.querySelector("[name=variation_id]") ? parseInt(form.querySelector("[name=variation_id]").value) : 0;
+
+            // Validate variation for variable products
+            if (form.querySelector("[name=variation_id]") && !variationId) {
+                alert("Please select product options before buying.");
+                return;
+            }
+
+            const tempForm = document.createElement("form");
+            tempForm.method = "POST";
+            tempForm.style.display = "none";
+            tempForm.innerHTML = "<input type=\'hidden\' name=\'wpamit-buy-now\' value=\'" + productId + "\'>"
+                                + "<input type=\'hidden\' name=\'quantity\' value=\'" + quantity + "\'>"
+                                + "<input type=\'hidden\' name=\'variation_id\' value=\'" + variationId + "\'>"
+                                + "<input type=\'hidden\' name=\'wpamit_nonce\' value=\'" + "' . wp_create_nonce('wpamit_buy_now_nonce') . '" + "\'>";
+            document.body.appendChild(tempForm);
+            tempForm.submit();
+        });
+    });
+    </script>
+    <style>
+//         .buy_now_button { 
+//             margin-top:10px; 
+//             display:inline-block; 
+//             width: 100%;
+//         }
+    </style>';
+}
+add_action('woocommerce_after_add_to_cart_button', 'wpamit_add_buy_now_button_single', 20);
+
+// ✅ Handle Buy Now Action with Security
+function wpamit_handle_buy_now_action() {
+    if ( ! isset( $_POST['wpamit-buy-now'] ) ) return;
+
+    // Security check - verify nonce
+    if ( ! isset( $_POST['wpamit_nonce'] ) || ! wp_verify_nonce( $_POST['wpamit_nonce'], 'wpamit_buy_now_nonce' ) ) {
+        wc_add_notice( __( 'Security check failed. Please try again.', 'woocommerce' ), 'error' );
+        return;
+    }
+
+    $product_id = absint( $_POST['wpamit-buy-now'] );
+    $quantity   = isset( $_POST['quantity'] ) ? absint( $_POST['quantity'] ) : 1;
+    $variation_id = isset( $_POST['variation_id'] ) ? absint( $_POST['variation_id'] ) : 0;
+
+    // Validate product
+    $product = wc_get_product( $product_id );
+    if ( ! $product || $product->is_type('external') ) {
+        wc_add_notice( __( 'Invalid product. Please try again.', 'woocommerce' ), 'error' );
+        return;
+    }
+
+    // Check stock availability
+    if ( ! $product->is_in_stock() ) {
+        wc_add_notice( __( 'This product is out of stock.', 'woocommerce' ), 'error' );
+        return;
+    }
+
+    // For variable products, validate variation
+    if ( $product->is_type('variable') && ! $variation_id ) {
+        wc_add_notice( __( 'Please select product options.', 'woocommerce' ), 'error' );
+        return;
+    }
+
+    // Save current cart in session
+    $current_cart = array();
+    foreach ( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
+        $current_cart[] = array(
+            'product_id' => $cart_item['product_id'],
+            'variation_id' => isset($cart_item['variation_id']) ? $cart_item['variation_id'] : 0,
+            'quantity' => $cart_item['quantity'],
+            'variation' => isset($cart_item['variation']) ? $cart_item['variation'] : array(),
+            'cart_item_data' => isset($cart_item['cart_item_data']) ? $cart_item['cart_item_data'] : array(),
+        );
+    }
+    WC()->session->set( 'wpamit_temp_cart', $current_cart );
+
+    // Empty cart
+    WC()->cart->empty_cart();
+
+    // Add Buy Now product to cart
+    if ( $variation_id ) {
+        $added = WC()->cart->add_to_cart( $product_id, $quantity, $variation_id );
+    } else {
+        $added = WC()->cart->add_to_cart( $product_id, $quantity );
+    }
+
+    // Check if product was added successfully
+    if ( ! $added ) {
+        // Restore cart if failed
+        wpamit_restore_saved_cart();
+        wc_add_notice( __( 'Could not add product to cart. Please try again.', 'woocommerce' ), 'error' );
+        return;
+    }
+
+    // Mark Buy Now session active
+    WC()->session->set('wpamit_buy_now_active', true);
+
+    // Redirect to checkout
+    wp_safe_redirect( wc_get_checkout_url() );
+    exit;
+}
+add_action( 'template_redirect', 'wpamit_handle_buy_now_action', 5 );
+
+// ✅ Helper function to restore saved cart - FIXED for empty cart bug
+function wpamit_restore_saved_cart() {
+    $temp_cart = WC()->session->get('wpamit_temp_cart');
+    
+    // CRITICAL FIX: Always empty cart first, even if temp_cart is empty
+    WC()->cart->empty_cart();
+    
+    // Then restore items if there were any
+    if ( $temp_cart && is_array($temp_cart) && count($temp_cart) > 0 ) {
+        foreach ( $temp_cart as $cart_item ) {
+            WC()->cart->add_to_cart(
+                $cart_item['product_id'],
+                $cart_item['quantity'],
+                isset($cart_item['variation_id']) ? $cart_item['variation_id'] : 0,
+                isset($cart_item['variation']) ? $cart_item['variation'] : array(),
+                isset($cart_item['cart_item_data']) ? $cart_item['cart_item_data'] : array()
+            );
+        }
+    }
+    // If temp_cart was empty, cart remains empty (Buy Now product removed)
+}
+
+// ✅ Add order meta when order is created
+function wpamit_mark_buy_now_order( $order_id ) {
+    if ( WC()->session->__isset('wpamit_buy_now_active') ) {
+        // Mark order as Buy Now order
+        update_post_meta( $order_id, '_is_buy_now_order', 'yes' );
+        
+        // Add order note for admin
+        $order = wc_get_order( $order_id );
+        if ( $order ) {
+            $order->add_order_note( 'Order placed via Buy Now button.' );
+        }
+        
+        // IMPORTANT: Set flag that order was created
+        WC()->session->set('wpamit_order_was_created', 'yes');
+    }
+}
+add_action( 'woocommerce_checkout_update_order_meta', 'wpamit_mark_buy_now_order', 10, 1 );
+
+// ✅ RESTORE original cart after order is created successfully
+function wpamit_restore_after_order_created( $order_id ) {
+    if ( WC()->session->__isset('wpamit_buy_now_active') && WC()->session->__isset('wpamit_temp_cart') ) {
+        // Restore the original cart items (so customer can continue shopping)
+        wpamit_restore_saved_cart();
+        
+        // Keep the order_was_created flag, but clear everything else
+        WC()->session->__unset('wpamit_buy_now_active');
+        WC()->session->__unset('wpamit_temp_cart');
+    }
+}
+add_action( 'woocommerce_new_order', 'wpamit_restore_after_order_created', 10, 1 );
+
+// ✅ Backup restoration on payment complete
+function wpamit_restore_on_payment( $order_id ) {
+    if ( WC()->session->__isset('wpamit_buy_now_active') && WC()->session->__isset('wpamit_temp_cart') ) {
+        wpamit_restore_saved_cart();
+        WC()->session->__unset('wpamit_buy_now_active');
+        WC()->session->__unset('wpamit_temp_cart');
+    }
+}
+add_action( 'woocommerce_payment_complete', 'wpamit_restore_on_payment', 10, 1 );
+
+// ✅ Backup restoration on order status change
+function wpamit_restore_on_status( $order_id ) {
+    if ( WC()->session->__isset('wpamit_buy_now_active') && WC()->session->__isset('wpamit_temp_cart') ) {
+        wpamit_restore_saved_cart();
+        WC()->session->__unset('wpamit_buy_now_active');
+        WC()->session->__unset('wpamit_temp_cart');
+    }
+}
+add_action( 'woocommerce_order_status_processing', 'wpamit_restore_on_status', 10, 1 );
+add_action( 'woocommerce_order_status_on-hold', 'wpamit_restore_on_status', 10, 1 );
+add_action( 'woocommerce_order_status_completed', 'wpamit_restore_on_status', 10, 1 );
+
+// ✅ Final cleanup on thank you page
+function wpamit_cleanup_thank_you( $order_id ) {
+    // Clear all session flags
+    WC()->session->__unset('wpamit_order_was_created');
+    WC()->session->__unset('wpamit_buy_now_active');
+    WC()->session->__unset('wpamit_temp_cart');
+}
+add_action( 'woocommerce_thankyou', 'wpamit_cleanup_thank_you', 10, 1 );
+
+// ✅ CRITICAL: Restore cart ONLY if leaving checkout WITHOUT completing order
+function wpamit_restore_cart_on_abandon() {
+    // Skip on checkout and thank you pages
+    if ( is_checkout() || is_order_received_page() ) {
+        return;
+    }
+    
+    // If order was created, don't restore (cart already restored by hooks above)
+    if ( WC()->session->__isset('wpamit_order_was_created') ) {
+        // Just cleanup
+        WC()->session->__unset('wpamit_order_was_created');
+        WC()->session->__unset('wpamit_buy_now_active');
+        WC()->session->__unset('wpamit_temp_cart');
+        return;
+    }
+    
+    // Only restore if Buy Now is active (customer abandoned before completing order)
+    if ( WC()->session->__isset('wpamit_buy_now_active') && WC()->session->__isset('wpamit_temp_cart') ) {
+        
+        // Customer abandoned checkout - restore original cart
+        wpamit_restore_saved_cart();
+        
+        // Clear session flags
+        WC()->session->__unset('wpamit_temp_cart');
+        WC()->session->__unset('wpamit_buy_now_active');
+    }
+}
+add_action( 'template_redirect', 'wpamit_restore_cart_on_abandon', 20 );
+
+// ✅ OPTIONAL: Add column in admin orders list to identify Buy Now orders
+function wpamit_add_buy_now_column( $columns ) {
+    $new_columns = array();
+    foreach ( $columns as $key => $column ) {
+        $new_columns[$key] = $column;
+        if ( $key === 'order_status' ) {
+            $new_columns['buy_now_order'] = __( 'Buy Now', 'woocommerce' );
+        }
+    }
+    return $new_columns;
+}
+add_filter( 'manage_edit-shop_order_columns', 'wpamit_add_buy_now_column', 20 );
+
+// ✅ Display Buy Now indicator in admin orders list
+function wpamit_display_buy_now_column( $column ) {
+    global $post;
+    
+    if ( $column === 'buy_now_order' ) {
+        $is_buy_now = get_post_meta( $post->ID, '_is_buy_now_order', true );
+        if ( $is_buy_now === 'yes' ) {
+            echo '<span style="color: #46b450; font-weight: bold;">✓</span>';
+        } else {
+            echo '—';
+        }
+    }
+}
+add_action( 'manage_shop_order_posts_custom_column', 'wpamit_display_buy_now_column', 10, 1 );
+
+// ✅ OPTIONAL: Add Buy Now filter in admin orders
+function wpamit_add_buy_now_filter() {
+    global $typenow;
+    
+    if ( 'shop_order' === $typenow ) {
+        $current = isset( $_GET['buy_now_filter'] ) ? $_GET['buy_now_filter'] : '';
+        ?>
+        <select name="buy_now_filter">
+            <option value=""><?php _e( 'All orders', 'woocommerce' ); ?></option>
+            <option value="yes" <?php selected( $current, 'yes' ); ?>><?php _e( 'Buy Now orders only', 'woocommerce' ); ?></option>
+            <option value="no" <?php selected( $current, 'no' ); ?>><?php _e( 'Regular orders only', 'woocommerce' ); ?></option>
+        </select>
+        <?php
+    }
+}
+add_action( 'restrict_manage_posts', 'wpamit_add_buy_now_filter' );
+
+// ✅ Apply Buy Now filter in admin orders
+function wpamit_apply_buy_now_filter( $query ) {
+    global $pagenow, $typenow;
+    
+    if ( 'shop_order' === $typenow && 'edit.php' === $pagenow && isset( $_GET['buy_now_filter'] ) && $_GET['buy_now_filter'] !== '' ) {
+        $meta_query = array(
+            array(
+                'key'     => '_is_buy_now_order',
+                'value'   => $_GET['buy_now_filter'],
+                'compare' => '='
+            )
+        );
+        $query->set( 'meta_query', $meta_query );
+    }
+}
+add_filter( 'pre_get_posts', 'wpamit_apply_buy_now_filter' );
+
+// ========================================
+// END OF BUY NOW CODE - COMPLETE VERSION
+// ========================================
