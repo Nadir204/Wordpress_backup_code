@@ -4,3 +4,69 @@ all price became same colour
 .widget-product-info .price .woocommerce-Price-amount{
 	color: #E77D33;
 }
+
+according tab title style single page product
+.wd-style-underline-reverse .nav-link-text:after  {
+    background: #E77D33 !important;
+}
+
+
+
+
+
+add to cart and buy now buttton
+
+.wd-single-add-cart>div>*:last-child, .wd-single-add-cart>*:last-child {
+    margin-bottom: 0;
+    display: inline-block;
+      
+    
+}
+/*add to cart button*/
+.wd-single-add-cart .elementor-widget-container .single_add_to_cart_button{
+    
+    margin-left: 5px;
+    margin-right: 5px;
+     background: #E77D33;
+   
+}
+
+/*buy now button*/
+
+.wd-single-add-cart .elementor-widget-container .buy_now_button{
+    
+    
+    margin-left: 5px;
+    background: #E77D33;
+    color: white;
+    
+}
+
+
+
+other button below
+.e-con-inner .wd-single-action-btn {
+    
+border: 2px solid  #E77D33;
+background:  #E77D33;
+
+}
+.e-con-inner .wd-single-action-btn .wd-action-text, .wd-sizeguide-btn .wd-open-popup{
+    
+    color: white;
+ 
+}
+
+.e-con-inner .wd-single-action-btn a{
+   color: white;
+  
+}
+
+
+
+
+
+
+
+
+
