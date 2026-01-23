@@ -18,7 +18,14 @@ function wpamit_add_buy_now_button_single() {
         buyNowBtn.className = "button alt buy_now_button";
         buyNowBtn.textContent = "Buy Now";
 
-        form.parentNode.insertBefore(buyNowBtn, form.nextSibling);
+        // Insert BEFORE the Add to Cart button (inside the form)
+        const addToCartBtn = form.querySelector("button[type=submit], .single_add_to_cart_button");
+        if (addToCartBtn) {
+            addToCartBtn.parentNode.insertBefore(buyNowBtn, addToCartBtn);
+        } else {
+            // Fallback: insert after form if Add to Cart button not found
+            form.parentNode.insertBefore(buyNowBtn, form.nextSibling);
+        }
 
         buyNowBtn.addEventListener("click", function() {
             const productId = ' . $product->get_ID() . ';
@@ -45,9 +52,8 @@ function wpamit_add_buy_now_button_single() {
     </script>
     <style>
 //         .buy_now_button { 
-//             margin-top:10px; 
-//             display:inline-block; 
-//             width: 100%;
+//             margin-right: 10px !important;
+//             display: inline-block !important;
 //         }
     </style>';
 }
