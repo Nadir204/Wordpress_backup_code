@@ -1,0 +1,6 @@
+all price became same colour
+
+.product-information .price .woocommerce-Price-amount, .product-wrapper .price .woocommerce-Price-amount, .widget-product-wrap 
+.widget-product-info .price .woocommerce-Price-amount{
+	color: #E77D33;
+}
