@@ -1,0 +1,129 @@
+/*affect tablet and laptop*/
+@media (min-width: 1025px){
+    
+    
+    .product-wrapper .product-element-bottom .fade-in-block .wd-bottom-actions .wd-add-btn .button{
+
+background: #E77D33;
+
+
+}
+
+.product-wrapper 
+.product-element-bottom 
+.fade-in-block 
+.wd-bottom-actions 
+.wd-add-btn 
+.button:hover {
+  background: red; 
+}
+
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+.elementor-element-7c19e562 .elementor-element-7bb84e9c .elementor-widget-container .products-view-grid .shop-view {
+   color: #E77D33;
+} 
+.elementor-element-7c19e562 .elementor-element-7bb84e9c .elementor-widget-container .products-view-grid .shop-view:hover{
+    
+    color: black;
+    cursor: pointer;
+    
+}
+/*not worked cz a tag*/
+.elementor-element-7c19e562 .elementor-element-7bb84e9c .elementor-widget-container .products-view-grid .shop-view:active{
+    
+     color: black;
+    
+}
+
+.elementor-element-7c19e562 .elementor-element-3f72d4bc .elementor-widget-container .woocommerce-ordering .orderby{
+   color: #E77D33;
+}
+
+
+
+
+
+
+widget-----------------------------------------------------------------------
+
+
+#woocommerce_price_filter-5      .price_slider_wrapper    .price_slider .ui-widget-header{
+    
+
+    background: black;
+    
+    
+}
+
+
+#woocommerce_price_filter-5 .price_slider_wrapper    .price_slider .ui-slider-handle:after {
+background-color: #E77D33;
+    
+    
+}
+
+#woocommerce_price_filter-5 .price_slider_wrapper  .price_slider_amount   .price_label{
+color:#E77D33;
+font-weight: bold;
+}
+
+
+
+/*all tile edit*/
+
+.elementor-widget-container #nav_mega_menu-2 h5{
+    
+    color: #E77D33;
+}
+
+.elementor-widget-container #woocommerce_price_filter-5 .widget-title, .elementor-widget-container #woodmart-woocommerce-layered-nav-8 .widget-title, .elementor-widget-container #wd-widget-stock-status-9 .widget-title, .elementor-widget-container #woocommerce_top_rated_products-10 .widget-title
+
+{
+    
+      color: #E77D33;
+
+    
+}
+
+
+/*.elementor-widget-container #block-15 .wp-elements-dc36071b90dd10351664bdf2262369bb .wp-block-categories__label{*/
+/*     color: #E77D33;*/
+/*     font-weight: bold;*/
+    
+/*}*/
+
+@media (max-width: 767px) {
+  .wd-nav-vertical .wd-dropdown-menu {
+    inset-inline-start: 0 !important;
+    inset-inline-end: auto;
+    transform: none;
+
+    left: 0;
+    right: auto;
+    top: 100%;
+
+    width: 100%;
+    position: absolute;
+  }
+}
+
+
+
+
+
+
+
+
+
